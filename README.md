@@ -62,3 +62,4 @@ a (shortest) distance of less than 2 [km], a distance between 2 and 4 [km], a
 distance between 4 and 8 [km] and a distance between 8 and 16 [km].
 
 <img src="https://raw.githubusercontent.com/wnelis/ADSB-distance-distribution/master/docs/Distance.A.png" >
+<img src="https://raw.githubusercontent.com/wnelis/ADSB-distance-distribution/master/docs/Distance.B.png" >
