@@ -41,7 +41,7 @@ Earth = 6364779				# Geocentric radius, [m]
 # output. As this data collector will be running on a Raspberry Pi 0W, the
 # resource usage should be minimised.
 #
-ExtCol= [ '/home/pi/dump1090/dump1090',
+ExtCol= [ '/path/to/dump1090/dump1090',
           '--lat', str(RefPnt['Latitude'] ),
           '--lon', str(RefPnt['Longitude']),
           '--net', '--net-http-port', '0',
