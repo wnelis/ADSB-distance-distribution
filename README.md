@@ -52,5 +52,5 @@ graphs show averages over an half hour. Thus a measurement showing a message
 rate of 50 messages per second implies the reception of 50 * 1800 = 90000
 messages.
 
-<img src="https://raw.githubusercontent.com/wnelis/ADSB-distance-distribution/tree/master/docs/Message.rate.png">
+<img src="https://github.com/wnelis/ADSB-distance-distribution/tree/master/docs/Message.rate.png" />
 
