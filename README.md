@@ -47,9 +47,18 @@ program dump1090. The path to this program needs to be set.
 After setting these configation parameters, the script is ready to go.
 
 ## Example
-The graphs below show the results as collected and presented by Xymon. The
-graphs show averages over an half hour. Thus a measurement showing a message
+The three graphs below show the results as collected and presented by Xymon.
+They all show averages over an half hour. Thus a measurement showing a message
 rate of 50 messages per second implies the reception of 50 * 1800 = 90000
 messages.
 
 <img src="https://raw.githubusercontent.com/wnelis/ADSB-distance-distribution/master/docs/Message.rate.png" >
+
+The distribution of distances is shown in two graphs. The first one shows three
+groups: distance unknown, a (shortest) distance larger than 16 [km] and a
+distance shorter than 16 [km].
+The second graph shows a further division of the last group into four subgroups:
+a (shortest) distance of less than 2 [km], a distance between 2 and 4 [km], a
+distance between 4 and 8 [km] and a distance between 8 and 16 [km].
+
+<img src="https://raw.githubusercontent.com/wnelis/ADSB-distance-distribution/master/docs/Distance.A.png" >
