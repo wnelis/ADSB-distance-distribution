@@ -34,7 +34,7 @@ short for 'DETermine_Air_Plane_Distance'.)
 At the beginning of script detapd.py there is a section entitled "Configuration
 parameters". In this section two items need to be set.
 
-The first one is the (location of) the reference point. This location is
+The first one is the (location of the) reference point. This location is
 normally the location of the receiver. As the messages of air planes up to tens
 of kilometres away can be received even with the simplest of antennas, a
 reasonable accurate result can be obtained if the distance between the reference
