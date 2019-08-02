@@ -4,7 +4,7 @@ This article describes patches for Xymon to have it store and display up 11
 years of collected data.
 
 
-## Very brief introduction
+## A very brief introduction
 
 Xymon is a network monitoring tool, which I use to handle the status and status
 changes and to store the collected data. The data (time series) is stored in
@@ -56,8 +56,8 @@ generated from each RRA will have the same size on the screen, which looks nice.
 The choice of the integration period, that is the number of PDPs per data point,
 is bounded to be in the range of about 4 to 12 times 288. I have chosen for 7
 times 288 = 2016, as this covers one complete week. Many processes have a weekly
-rhythm, that is a higher value on Monday through Friday and a lower value on
-Saturday and Sunday. Using a an integration period of one week will remove this
+rhythm, for instance a higher value on Monday through Friday and a lower value
+on Saturday and Sunday. An integration period of one week will remove this
 variation in first order from the results.
 
 Thus the additional RRA will contain 576 data points, each containing the
