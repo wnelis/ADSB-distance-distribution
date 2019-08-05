@@ -80,7 +80,7 @@ The default section of file rrddefinitions.cfg becomes:
         RRA:AVERAGE:0.5:24:576
         # 576 datapoints w/ 288*5 minute averaged = 576 days @ 1 day avg.
         RRA:AVERAGE:0.5:288:576
-        # 576 datapoints 2/ 2016*5 minute averaged = 11 years @ 1 week avg.
+        # 576 datapoints w/ 2016*5 minute averaged = 11 years @ 1 week avg.
         RRA:AVERAGE:0.5:2016:576
 ```
 
