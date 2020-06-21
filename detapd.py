@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 #
 # detapd, DETermine_Air_Plane_Distance:
 #
@@ -8,11 +9,12 @@
 # Written by W.J.M. Nelis, wim.nelis@ziggo.nl, 2019.06
 #
 # To do:
-# - Add descriptive title to each of the entries in  dict aps.
+# - Gracefull shut down when killed.
+# - Handle multiple messages per read from the socket.
+# - Add descriptive title to each of the entries in dict aps.
 #
 import datetime
 import math				# Goniometric functions
-import random
 import re				# Regular expressions
 import signal
 import socket				# Socket API
@@ -59,7 +61,7 @@ ServerPort= 30003
 #
 # Define the distance classes to use. In this (ordered) list per distance class
 # a tuple, containing the name (key) as well as a part of the expression to
-# evaluate, is defined. The check for the correct class must evaluate the
+# evaluate, is defined. The check for the correct class will evaluate the
 # classes in the order specified until one fits.
 #
 DistClass= [
@@ -102,13 +104,13 @@ for i in DistClass:  aps[i[0]]= 0	# Add counter per distance class
 # Cartesian coordinates, with (0,0,0) being the centre of the earth.
 #
 def Cartesian( lat, long, alt ):
-    la= math.radians( lat )		# Convert angles to radians
-    lo= math.radians( long )
-    ra= Earth + alt*0.3048		# Convert altitude to [m]
-    x= ra*math.cos(la)*math.cos(lo)	# Calculate Cartesian coordinates
-    y= ra*math.cos(la)*math.sin(lo)
-    z= ra*math.sin(la)
-    return (x,y,z)
+  la= math.radians( lat )		# Convert angles to radians
+  lo= math.radians( long )
+  ra= Earth + alt*0.3048		# Convert altitude to [m]
+  x= ra*math.cos(la)*math.cos(lo)	# Calculate Cartesian coordinates
+  y= ra*math.cos(la)*math.sin(lo)
+  z= ra*math.sin(la)
+  return (x,y,z)
 
 #
 # Function ClassifyDistance maps the distance, expressed in [m], onto a key to
@@ -165,6 +167,9 @@ class StoppableThread(threading.Thread):
   def stopped( self ):
     return self._stop_event.is_set()
 
+  def wait( self, timeout ):
+    return self._stop_event.wait( timeout )
+
  #
  # Method FormatStr takes a format and a list of parameters. If the formatting
  # of the string fails with exception ValueError, the numeric conversions are
@@ -217,32 +222,19 @@ class StoppableThread(threading.Thread):
 
  #
  # Method Wait waits until the (Unix) timestamp reaches the next integer
- # multiple of Period seconds and then another Delay seconds. The total wait
- # time is chopped into randomly sized pieces of 5 to 15 [s]. If after returning
- # from sleeping the Stop-event is set, it will return immediatly.
+ # multiple of Period seconds and then another Delay seconds. However, if the
+ # thread method stop is invoked before the time has expired, this method will
+ # return at that time.
+ # Parameters Period and Delay are integer numbers, with Period >= 2 and
+ # 0 <= Delay < Period.
  #
   def Wait( self, Period, Delay ):
     Now= time.time()
-    ActTim= int( Now + 0.5 )
+    ActTim= int( Now )
     ActTim= ( (ActTim+Period-1) // Period ) * Period
     SlpTim= int( ActTim - Now ) + Delay
-    if SlpTim < 2:  SlpTim+= Period
-
-    while SlpTim > 10:
-      Step   = random.randint( 3, 10 )
-      SlpTim-= Step
-      time.sleep( Step )
-      if self.stopped():  return
-    time.sleep( SlpTim )
-
-#
-# Exception ServiceExit is triggered at the receipt of a SIGTERM signal. It can
-# be used in the main thread to stop all other threads.
-#
-class ServiceExit( Exception ):
-  """ Custom exception which is used to trigger the clean exit of all running
-  threads and the main program. """
-  pass
+    if SlpTim < 1.5:  SlpTim+= Period
+    self.wait( SlpTim )
 
 
 #
@@ -258,7 +250,7 @@ class Airplane():
   def __init__( self, Id ):
     self.IcaoAddr= Id			# ICAO address
     self.CallSign= None			# Flight code
-    self.FrstSeen= None
+    self.FrstSeen= None			# Time stamp of first message received
     self.LastSeen= None			# Time stamp of last message received
     self.LocatMsg=    0			# Count of messages with location
     self.TotalMsg=    0			# Total message count
@@ -281,13 +273,13 @@ class Airplane():
     self.PrevLoc= self.CurLoc
     self.CurLoc = newloc
 
-    if self.Passed:
-      return
+#    if self.Passed:
+#      return
   #
   # Handle the case that this is the first position received for this air plane.
   # Compute the distance to the reference point and save this distance.
   #
-    elif self.PrevLoc is None:
+    if self.PrevLoc is None:
       self.Distance= Distance( self.CurLoc, RefPnt['Cartesian'] )
   #
   # Handle the case that an earlier position of this airplane is known. Compute
@@ -382,7 +374,7 @@ class HandleMessages( StoppableThread ):
         exit( 1 )
 
     while not self.stopped():
-      data = self.sock.recv( 1024 )
+      data = self.sock.recv( 2048 )
       lines= data.decode().split( '\r\n' )
       for line in lines:
         if line == '':  continue
@@ -479,6 +471,7 @@ class CleanAirplaneList( StoppableThread ):
           self.outfil.write( '{} {} {} {:8} {:3d} {}\n'.format(tf,tl,apl[id].IcaoAddr,cs,mc,di) )
 
         del apl[id]			# Finally, delete the entry
+
       time.sleep( 1 )
 
     self.outfil.close()
@@ -574,11 +567,13 @@ class MonitorAirspace( StoppableThread ):
 # MAIN PROGRAM.
 # =============
 #
+MainThread= threading.Event()		# Set to stop this script
+
 def HandleSignal( signum, frame ):
   syslog.openlog( 'APD', 0, syslog.LOG_LOCAL6 )
   syslog.syslog ( 'Termination signal #{} received'.format(signum) )
   syslog.closelog()
-  raise ServiceExit			# Raise an exception
+  MainThread.set()			# Set flag to stop script
 
 #
 # Set up handling of termination signals. They are converted into an exception.
@@ -604,12 +599,24 @@ th1= CleanAirplaneList() ;  threads.append(th1) ;  th1.start()
 time.sleep( 10 )			# Wait for some data to arrive
 th2= MonitorAirspace()   ;  threads.append(th2) ;  th2.start()
 #
-# Wait fo the threads to stop. If a termination signal is received, tell the
-# threads to stop gracefully.
+# Monitor the state of the threads of this script. If one thread dies or if an
+# external signal is received, all (other) threads, including this main thread,
+# should stop (too) in a graceful way.
 #
 while len(threads) > 0:
   try:
-    threads[:]= [ t for t in threads  if t.join(1000) or t.is_alive() ]
-  except ( KeyboardInterrupt, ServiceExit ):
+    all_alive= True			# See if all threads are currently alive
     for t in threads:
-      t.stop()
+      all_alive= all_alive and t.is_alive()
+    if all_alive:
+      MainThread.wait( 10 )		# If so, wait some time
+
+    if not all_alive  or  MainThread.is_set():
+      for t in reversed( threads ):	# Note the order of this loop
+        if t.is_alive():
+          t.stop()
+        t.join()
+        threads.remove( t )		# Thread has stopped
+
+  except KeyboardInterrupt:
+    MainThread.set()			# Set flag to stop this script
